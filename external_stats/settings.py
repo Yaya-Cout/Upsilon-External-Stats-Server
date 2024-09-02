@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +22,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-kq_z!tep%0qjoa(8b^8docxv^l(3vv8q4f6-f%+u2&8rrk6h3o'
-
+SECRET_KEY = (
+    os.environ.get("DJANGO_SECURITY_KEY")
+    or 'django-insecure-kq_z!tep%0qjoa(8b^8docxv^l(3vv8q4f6-f%+u2&8rrk6h3o'
+)
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+DEBUG = os.environ.get("DEPLOY") != "1"
+ALLOWED_HOSTS: list[str] = []
 
 
 # Application definition
@@ -39,11 +42,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'external_stats',
     'rest_framework',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -74,13 +79,42 @@ WSGI_APPLICATION = 'external_stats.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# If DEPLOY=1 environnement flag is set, use MySQL database
+if os.environ.get("DEPLOY") == "1":
+    # If MYSQL_HOST, MYSQL_PORT, MYSQL_USER and MYSQL_PASSWORD environnement
+    # variables are set, use them to connect to the database
+    if all(
+        os.environ.get(var)
+        for var in ["MYSQL_HOST", "MYSQL_PORT", "MYSQL_USER", "MYSQL_PASSWORD",
+                    "MYSQL_DB"]
+    ):
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.mysql",
+                "NAME": os.environ.get("MYSQL_DB"),
+                "HOST": os.environ.get("MYSQL_HOST"),
+                "PORT": os.environ.get("MYSQL_PORT"),
+                "USER": os.environ.get("MYSQL_USER"),
+                "PASSWORD": os.environ.get("MYSQL_PASSWORD"),
+            }
+        }
+    else:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.mysql",
+                "NAME": "workshop",
+                "OPTIONS": {
+                    "read_default_file": os.path.join(BASE_DIR, "mysql.cnf"),
+                },
+            }
+        }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
 
 
 # Password validation
@@ -117,7 +151,20 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATIC_URL = 'static/'
+
+# CSRF trusted origins (primary used by Django and DRF login page)
+# Example : CSRF_TRUSTED_ORIGINS="https://yann.n1n1.xyz;https://externalstats.upsilon.yann.n1n1.xyz"
+if os.environ.get("CSRF_TRUSTED_ORIGINS"):
+    CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS").split(";")
+else:
+    print("Warning : CSRF_TRUSTED_ORIGINS is not set")
+    CSRF_TRUSTED_ORIGINS = [
+        "https://externalstats.upsilon.yann.n1n1.xyz"
+    ]
+
+CSRF_COOKIE_SECURE = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -133,3 +180,16 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ]
 }
+
+# CORS can be used to prevent other websites from making false reports (and
+# breaking the stats)
+if os.environ.get("CORS_ALLOW_ALL_ORIGINS"):
+    CORS_ALLOW_ALL_ORIGINS = True
+elif os.environ.get("CORS_ORIGIN_REGEX_WHITELIST"):
+    CORS_ORIGIN_REGEX_WHITELIST = os.environ.get(
+        "CORS_ORIGIN_REGEX_WHITELIST").split(";")
+else:
+    print("Warning : Default CORS settings used")
+    CORS_ORIGIN_REGEX_WHITELIST = [
+        "https://upsilonnumworks.github.io/Upsilon-External/",
+    ]

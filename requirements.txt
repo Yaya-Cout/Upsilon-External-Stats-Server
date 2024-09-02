@@ -1,0 +1,9 @@
+# Server dependencies
+djangorestframework
+django
+
+# CORS headers
+django-cors-headers
+
+# MySQL database
+mysqlclient
