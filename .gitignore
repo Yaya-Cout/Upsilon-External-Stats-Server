@@ -1,0 +1,11 @@
+# Virtualenv
+env/
+
+# Database (for development)
+db.sqlite3
+
+# Pycache
+**/__pycache__/
+
+# VSCode settings
+.vscode/
