@@ -1,5 +1,6 @@
 from external_stats.api.models import ExternalInstallDay
 from rest_framework import serializers
+from django.db.models import Q
 
 import datetime
 
@@ -11,6 +12,8 @@ class ExternalInstallDaySerializer(serializers.HyperlinkedModelSerializer):
     def create(self, validated_data):
         """Create or increase stats for the current day."""
         # Get current day
+        date = datetime.date.today()
+
         create_new = False
         data = {
             "applications": {},
@@ -21,7 +24,7 @@ class ExternalInstallDaySerializer(serializers.HyperlinkedModelSerializer):
             # This code is broken if we go back in the time, but it shouldn't
             # happen in production
             obj = ExternalInstallDay.objects.latest('date')
-            if obj.date == datetime.date.today():
+            if obj.date == date:
                 data = {
                     "applications": obj.applications,
                     "installations": obj.installations,
@@ -46,6 +49,10 @@ class ExternalInstallDaySerializer(serializers.HyperlinkedModelSerializer):
             data["wallpaper_count"] += 1
 
         if not create_new:
-            return self.update(obj, data)
+            self.update(obj, data)
         else:
-            return super().create(data)
+            super().create(data)
+
+        # HACK: To prevent information leak, we are returning data from the day
+        # before instead of searching for a real fix for this problem
+        return ExternalInstallDay.objects.filter(~Q(date=date)).latest('date')
