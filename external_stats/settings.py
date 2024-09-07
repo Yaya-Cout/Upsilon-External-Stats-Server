@@ -186,10 +186,10 @@ REST_FRAMEWORK = {
 if os.environ.get("CORS_ALLOW_ALL_ORIGINS"):
     CORS_ALLOW_ALL_ORIGINS = True
 elif os.environ.get("CORS_ORIGIN_REGEX_WHITELIST"):
-    CORS_ORIGIN_REGEX_WHITELIST = os.environ.get(
+    CORS_ALLOWED_ORIGIN_REGEXES = os.environ.get(
         "CORS_ORIGIN_REGEX_WHITELIST").split(";")
 else:
     print("Warning : Default CORS settings used")
-    CORS_ORIGIN_REGEX_WHITELIST = [
-        "https://upsilonnumworks.github.io/Upsilon-External/",
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        "https://upsilonnumworks.github.io",
     ]
