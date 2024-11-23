@@ -24,6 +24,7 @@ from external_stats.api import views
 
 router = routers.DefaultRouter()
 router.register(r'installation_stats', views.ExternalInstallDayViewSet, basename='installation_stats')
+router.register(r'successful_installation_stats', views.SuccessfulExternalInstallDayViewSet, basename='successful_installation_stats')
 
 
 urlpatterns = [

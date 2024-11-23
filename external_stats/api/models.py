@@ -20,3 +20,7 @@ class ExternalInstallDay(models.Model):
 
     # We are not logging the number of files as it seems useless as we can't
     # associate it with a specific application and an average is not useful
+
+
+class SuccessfulExternalInstallDay(ExternalInstallDay):
+    pass
