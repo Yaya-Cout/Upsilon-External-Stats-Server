@@ -22,5 +22,19 @@ class ExternalInstallDay(models.Model):
     # associate it with a specific application and an average is not useful
 
 
-class SuccessfulExternalInstallDay(ExternalInstallDay):
-    pass
+class SuccessfulExternalInstallDay(models.Model):
+    """A single successful install in database."""
+    # List of applications and their installations stats as JSON (easier to use)
+    applications = models.JSONField()
+
+    # Total number of installation (increased by one each request)
+    installations = models.IntegerField(default=0)
+
+    # Wallpaper count
+    wallpaper_count = models.IntegerField(default=0)
+
+    # Date
+    date = models.DateField(default=datetime.date.today)
+
+    # We are not logging the number of files as it seems useless as we can't
+    # associate it with a specific application and an average is not useful
